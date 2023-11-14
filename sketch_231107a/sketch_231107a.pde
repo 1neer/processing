@@ -1,6 +1,8 @@
 import processing.opengl.*;
 import processing.video.*;
+
 Movie myMovie;
+Block2 block;
 int i = 0;
 int totalBalls = 0; 
 Ball[] myBall = new Ball[100];
@@ -13,31 +15,42 @@ boolean filter = false;
 
 void setup() {
   size(600, 400, OPENGL);
-  myMovie = new Movie(this, "cubist.mov"); // 객체 초기화1
+  myMovie = new Movie(this, "test.mp4"); // 객체 초기화1
   myMovie.loop();
   myFont = createFont("HakgyoansimBombanghakR.ttf", 32);
   textFont(myFont);
   pointer = loadImage("mouse-pointer.png");
   PImage BlockImage = loadImage("flower.jpg");
   bg = new Block(BlockImage, 0, 0, 600, 400);
+  block = new Block2(myMovie, 300 , 200, 100, 50);
 }
 
 void draw() {
-  if(filter == true){
+  background(255);
+  if (filter == true) {
     bg.display();
     bg.crash();
-    filterStartTime ++;
-    }
-    
-if( filterStartTime == 60 || filterStartTime == 0){
-  bg.display();
-  filterStartTime = 0;
-  filter = false;
-}
+    filterStartTime++;
+  }
+
+  if (filterStartTime == 60 || filterStartTime == 0) {
+    bg.display();
+    filterStartTime = 0;
+    filter = false;
+  }
+  
+  block.display();
+  
   for (int j = 0; j < myBall.length; j++) {
     if (myBall[j] != null) {
       myBall[j].move();
       myBall[j].display();
+      
+      // 공과 Block2 객체 간의 충돌 확인
+      if (block.checkCollision(myBall[j])) {
+        myBall[j].reverseDirection();
+      }
+      
       if (myBall[j].getBounces() >= 5) {
         fireworks[j] = new Firework(myBall[j].xpos, myBall[j].ypos);
         filter = true;
@@ -107,6 +120,13 @@ public class Ball {
       bounces++;
     }
   }
+  
+  void reverseDirection() {
+    xspeed = -xspeed;
+    yspeed = -yspeed;
+    bounces++;
+  }
+
   int getBounces() {
     return bounces;
   }
@@ -144,64 +164,75 @@ class Firework {
       point(sparksX[i], sparksY[i]);
     }
   }
-  
+
   boolean isFinished() {
     return lifespan <= 0;
   }
 }
 
-public class Block{
+public class Block {
   PImage BlockImage;
   float x, y;
   float hei, wid;
-  
-  Block(PImage BlockImage,float x, float y, float hei, float wid){
+
+  Block(PImage BlockImage, float x, float y, float hei, float wid) {
     this.BlockImage = BlockImage;
     this.x = x;
     this.y = y;
     this.hei = hei;
     this.wid = wid;
   }
-  void display(){
+
+  void display() {
     image(BlockImage, x, y, hei, wid);
   }
-  
-  void crash(){
+
+  void crash() {
     filter(INVERT);
-  }
-  void resetFilter(){
-    image(BlockImage, x, y, hei, wid);
   }
 }
 
-public class Bolck2{
+public class Block2 {
   Movie mymovie;
   float xpos, ypos, hei, wid;
-  
-  Block2(Movie movie, float x, float y, float hei, float wid){
+
+  Block2(Movie movie, float x, float y, float wid, float hei) {
     this.mymovie = movie;
     this.xpos = x;
     this.ypos = y;
     this.hei = hei;
     this.wid = wid;
   }
-  
-  void display(){
+
+  void display() {
     noStroke();
     beginShape();
-      texture(mymovie);
-      vertex(xpos, ypos, xpos, ypos);
-      vertex(xpos + 100, ypos, xpos + 100, ypos);
-      vertex(xpos, ypos + 50, xpos, ypos + 50);
-      vertex(xpos + 100, ypos + 50, xpos + 100, ypos + 50);
-      endShape();
+    texture(mymovie);
+    vertex(xpos, ypos, xpos, ypos);
+    vertex(xpos + wid, ypos, xpos + wid, ypos);
+    vertex(xpos + wid, ypos + hei, xpos + wid, ypos + hei);
+    vertex(xpos, ypos + hei, xpos, ypos + hei);
+    endShape();
   }
-  
-  void movieEvent(){
-    mymoive.read();
+
+  // 공과 Block2 객체 간의 충돌을 확인하는 메서드
+  boolean checkCollision(Ball ball) {
+    float ballRadius = 16; // 공 반지름
+    float blockLeft = xpos;
+    float blockRight = xpos + wid;
+    float blockTop = ypos;
+    float blockBottom = ypos + hei;
+
+    // 충돌 체크
+    if (ball.xpos + ballRadius > blockLeft && ball.xpos - ballRadius < blockRight &&
+        ball.ypos + ballRadius > blockTop && ball.ypos - ballRadius < blockBottom) {
+      return true; // 충돌이 있으면 true 반환
+    } else {
+      return false; // 충돌이 없으면 false 반환
+    }
   }
-      
-  
+}
+
 void mousePressed() {
   if (i < 101) {
     myBall[i] = new Ball(color(100), mouseX, mouseY, 2, 2);
@@ -210,6 +241,10 @@ void mousePressed() {
   }
 }
 
-void pointerDrow(){
+void pointerDrow() {
   image(pointer, mouseX, mouseY, 40, 40);
 } 
+
+void movieEvent(Movie myMovie) {
+  myMovie.read(); 
+}
