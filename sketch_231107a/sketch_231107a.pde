@@ -1,23 +1,46 @@
+import processing.opengl.*;
+import processing.video.*;
+Movie myMovie;
 int i = 0;
 int totalBalls = 0; 
 Ball[] myBall = new Ball[100];
 Firework[] fireworks = new Firework[100];
+Block bg;
 PFont myFont;
+PImage pointer;
+int filterStartTime = 0; // 필터가 시작된 시간
+boolean filter = false;
 
 void setup() {
-  size(600, 400);
+  size(600, 400, OPENGL);
+  myMovie = new Movie(this, "cubist.mov"); // 객체 초기화1
+  myMovie.loop();
   myFont = createFont("HakgyoansimBombanghakR.ttf", 32);
   textFont(myFont);
+  pointer = loadImage("mouse-pointer.png");
+  PImage BlockImage = loadImage("flower.jpg");
+  bg = new Block(BlockImage, 0, 0, 600, 400);
 }
 
 void draw() {
-  background(255);
+  if(filter == true){
+    bg.display();
+    bg.crash();
+    filterStartTime ++;
+    }
+    
+if( filterStartTime == 60 || filterStartTime == 0){
+  bg.display();
+  filterStartTime = 0;
+  filter = false;
+}
   for (int j = 0; j < myBall.length; j++) {
     if (myBall[j] != null) {
       myBall[j].move();
       myBall[j].display();
       if (myBall[j].getBounces() >= 5) {
         fireworks[j] = new Firework(myBall[j].xpos, myBall[j].ypos);
+        filter = true;
         myBall[j] = null;
       }
     }
@@ -32,6 +55,7 @@ void draw() {
       }
     }
   }
+  pointerDrow();
   updateInfo(); // 정보 업데이트 함수 호출
 }
 
@@ -83,7 +107,6 @@ public class Ball {
       bounces++;
     }
   }
-
   int getBounces() {
     return bounces;
   }
@@ -126,6 +149,59 @@ class Firework {
     return lifespan <= 0;
   }
 }
+
+public class Block{
+  PImage BlockImage;
+  float x, y;
+  float hei, wid;
+  
+  Block(PImage BlockImage,float x, float y, float hei, float wid){
+    this.BlockImage = BlockImage;
+    this.x = x;
+    this.y = y;
+    this.hei = hei;
+    this.wid = wid;
+  }
+  void display(){
+    image(BlockImage, x, y, hei, wid);
+  }
+  
+  void crash(){
+    filter(INVERT);
+  }
+  void resetFilter(){
+    image(BlockImage, x, y, hei, wid);
+  }
+}
+
+public class Bolck2{
+  Movie mymovie;
+  float xpos, ypos, hei, wid;
+  
+  Block2(Movie movie, float x, float y, float hei, float wid){
+    this.mymovie = movie;
+    this.xpos = x;
+    this.ypos = y;
+    this.hei = hei;
+    this.wid = wid;
+  }
+  
+  void display(){
+    noStroke();
+    beginShape();
+      texture(mymovie);
+      vertex(xpos, ypos, xpos, ypos);
+      vertex(xpos + 100, ypos, xpos + 100, ypos);
+      vertex(xpos, ypos + 50, xpos, ypos + 50);
+      vertex(xpos + 100, ypos + 50, xpos + 100, ypos + 50);
+      endShape();
+  }
+  
+  void movieEvent(){
+    mymoive.read();
+  }
+      
+  
 void mousePressed() {
   if (i < 101) {
     myBall[i] = new Ball(color(100), mouseX, mouseY, 2, 2);
@@ -133,3 +209,7 @@ void mousePressed() {
     i = i + 1;
   }
 }
+
+void pointerDrow(){
+  image(pointer, mouseX, mouseY, 40, 40);
+} 
