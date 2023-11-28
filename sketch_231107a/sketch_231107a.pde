@@ -1,5 +1,7 @@
 import processing.opengl.*;
 import processing.video.*;
+import ddf.minim.*;
+import processing.serial.*;
 
 Movie myMovie;
 Block2 block;
@@ -12,8 +14,13 @@ PFont myFont;
 PImage pointer;
 int filterStartTime = 0; // 필터가 시작된 시간
 boolean filter = false;
+Serial myPort;//아두이노 연결
+
+int x = 0;
 
 void setup() {
+  myPort = new Serial(this, "COM4", 9600);
+  myPort.bufferUntil('\n');
   size(600, 400, OPENGL);
   myMovie = new Movie(this, "test.mp4"); // 객체 초기화1
   myMovie.loop();
@@ -22,7 +29,7 @@ void setup() {
   pointer = loadImage("mouse-pointer.png");
   PImage BlockImage = loadImage("flower.jpg");
   bg = new Block(BlockImage, 0, 0, 600, 400);
-  block = new Block2(myMovie, 300 , 200, 100, 50);
+  block = new Block2(myMovie, 300 , 300, 100, 30);
 }
 
 void draw() {
@@ -40,6 +47,8 @@ void draw() {
   }
   
   block.display();
+  block.move(x);
+  x = 0;
   
   for (int j = 0; j < myBall.length; j++) {
     if (myBall[j] != null) {
@@ -214,6 +223,13 @@ public class Block2 {
     vertex(xpos, ypos + hei, xpos, ypos + hei);
     endShape();
   }
+  
+  void move(int x){
+    if(this.xpos <= 0 || this.xpos >= 500){
+      x = 0;
+    }
+    this.xpos = this.xpos + x;
+  }
 
   // 공과 Block2 객체 간의 충돌을 확인하는 메서드
   boolean checkCollision(Ball ball) {
@@ -247,4 +263,16 @@ void pointerDrow() {
 
 void movieEvent(Movie myMovie) {
   myMovie.read(); 
+}
+
+void serialEvent(Serial p) {
+ String inString = myPort.readStringUntil('\n');
+ char ch=inString.charAt(0);
+ if (ch == 'd') {
+ x = 3;
+ }
+ else if (ch == 'a') {
+ x = -3;
+ }
+
 }
