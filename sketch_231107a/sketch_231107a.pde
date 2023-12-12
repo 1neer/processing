@@ -4,10 +4,11 @@ import ddf.minim.*;
 import processing.serial.*;
 
 Movie myMovie;
-Block2 block;
+Block2 player;
 int i = 0;
 int totalBalls = 0; 
 Ball[] myBall = new Ball[100];
+Block2[] block = new Block2[100];
 Firework[] fireworks = new Firework[100];
 Block bg;
 PFont myFont;
@@ -19,7 +20,7 @@ Serial myPort;//아두이노 연결
 int x = 0;
 
 void setup() {
-  myPort = new Serial(this, "COM4", 9600);
+  myPort = new Serial(this, "COM6", 9600);
   myPort.bufferUntil('\n');
   size(600, 400, OPENGL);
   myMovie = new Movie(this, "test.mp4"); // 객체 초기화1
@@ -29,7 +30,10 @@ void setup() {
   pointer = loadImage("mouse-pointer.png");
   PImage BlockImage = loadImage("flower.jpg");
   bg = new Block(BlockImage, 0, 0, 600, 400);
-  block = new Block2(myMovie, 300 , 300, 100, 30);
+  player = new Block2(myMovie, 300 , 300, 100, 30);
+  for(int i = 0; i <6; i++){
+    block[i] = new Block2(myMovie, 100*i, 100, 99, 100); 
+  }
 }
 
 void draw() {
@@ -45,9 +49,13 @@ void draw() {
     filterStartTime = 0;
     filter = false;
   }
-  
-  block.display();
-  block.move(x);
+  for(int i = 0; i <block.length; i++){
+    if (block[i] != null){
+    block[i].display(); 
+    }
+  }
+  player.display();
+  player.move(x);
   x = 0;
   
   for (int j = 0; j < myBall.length; j++) {
@@ -56,8 +64,19 @@ void draw() {
       myBall[j].display();
       
       // 공과 Block2 객체 간의 충돌 확인
-      if (block.checkCollision(myBall[j])) {
+      if (player.checkCollision(myBall[j])) {
         myBall[j].reverseDirection();
+      }
+      for(int i = 0; i <block.length; i++){
+        if (block[i] != null){
+        if(block[i].checkCollision(myBall[j])){
+          myBall[j].reverseDirection();
+          block[i].crash++;
+            if(block[i].crash >= 5){
+              block[i] = null;
+            }
+          }
+        }
       }
       
       if (myBall[j].getBounces() >= 5) {
@@ -204,13 +223,14 @@ public class Block {
 public class Block2 {
   Movie mymovie;
   float xpos, ypos, hei, wid;
-
+  public int crash;
   Block2(Movie movie, float x, float y, float wid, float hei) {
     this.mymovie = movie;
     this.xpos = x;
     this.ypos = y;
     this.hei = hei;
     this.wid = wid;
+    this.crash = 0;
   }
 
   void display() {
